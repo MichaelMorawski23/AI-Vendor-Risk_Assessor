@@ -43,6 +43,17 @@ from src.rmf_mapping import map_all
 
 load_dotenv()
 
+# On Streamlit Community Cloud the API key is entered into the app's Secrets
+# panel (st.secrets), not a .env file. Bridge it into os.environ once at
+# startup so the rest of the codebase — llm_extractor.py included — only ever
+# has to know about a plain environment variable, not which host it's running on.
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    try:
+        if "ANTHROPIC_API_KEY" in st.secrets:
+            os.environ["ANTHROPIC_API_KEY"] = st.secrets["ANTHROPIC_API_KEY"]
+    except Exception:
+        pass  # no secrets.toml locally — expected outside of Streamlit Cloud
+
 st.set_page_config(
     page_title="AI Vendor Risk Assessment Automator",
     page_icon="🛡️",
