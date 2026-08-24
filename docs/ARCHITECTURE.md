@@ -1,33 +1,52 @@
 # Architecture
 
 ```
-Uploaded PDFs
-      |
-      v
-extraction.py        -- pdfplumber, per-page text
-      |
-      v
-injection_guard.py    -- heuristic scan for instruction-like content;
-      |                   flags logged, flagged spans redacted before
-      |                   anything is placed in an LLM prompt
-      v
-llm_extractor.py      -- Claude API; document text is data in a delimited
-      |                   <document> block, never the system prompt; every
-      |                   answer must cite a document + page or come back
-      |                   null ("Not verified")
-      v
-risk_scoring.py        -- pure rule-based scoring (no LLM) over the
-      |                   structured evidence; deterministic and auditable
-      v
-rmf_mapping.py          -- crosswalks each question to a NIST AI RMF
-      |                    function (Govern/Map/Measure/Manage)
-      v
-report.py               -- Excel risk register: summary, evidence w/
-      |                    citations, findings, RMF mapping, screened content
-      v
-Human reviewer          -- writes the recommendation, tool never
-                           auto-approves a vendor
+Intake profile (VendorProfile)      Uploaded PDFs
+      |                                   |
+      |                                   v
+      |                             extraction.py   -- pdfplumber, per-page text
+      |                                   |
+      |                                   v
+      |                          injection_guard.py -- heuristic scan for
+      |                                   |             instruction-like content;
+      |                                   |             flags logged, matched spans
+      |                                   |             redacted before any prompt
+      |                                   v
+      |                           llm_extractor.py  -- Claude API; document text is
+      |                                   |             data in a delimited <document>
+      |                                   |             block, never the system prompt;
+      |                                   |             every answer cites a document +
+      |                                   |             page or comes back null
+      |                                   v
+      |                            evidence (21 questions, 4 domains)
+      |                                   |
+      +-----------------+-----------------+
+                        v
+                  risk_scoring.py   -- pure rule-based (no LLM):
+                        |               inherent risk  <- intake profile
+                        |               control gaps   <- evidence
+                        |               residual risk  <- inherent - verified coverage,
+                        |                                 blocked by high-severity gaps
+                        v
+                  rmf_mapping.py    -- crosswalks each question to a NIST AI RMF
+                        |               function (Govern/Map/Measure/Manage)
+                        v
+                  report.py         -- Excel risk register: summary, intake,
+                        |               inherent drivers, cited evidence, findings,
+                        |               required controls, RMF mapping, screened content
+                        v
+                  Human reviewer    -- records the decision; tool never
+                                       auto-approves a vendor
 ```
+
+## Why inherent risk comes from the intake, not the documents
+
+Inherent risk is the risk of the engagement itself — a tool processing PHI for
+customers and taking autonomous actions is high-risk regardless of how good the
+vendor's security page is. Controls then reduce that to residual risk. Deriving
+inherent risk from the vendor's own documentation would invert this: a vendor
+with thorough marketing copy would score *lower* inherent risk than a quiet one
+handling the same data. Splitting the two inputs keeps each honest.
 
 ## Why the LLM only touches extraction
 

@@ -20,14 +20,17 @@ _QUESTION_TO_RMF: dict[str, RmfMappingEntry] = {
     "customer_can_delete_data": RmfMappingEntry(
         RmfFunction.GOVERN, "GOVERN 1.1 — Policies and procedures", "Data subject rights alignment"
     ),
-    "data_encrypted": RmfMappingEntry(
-        RmfFunction.MANAGE, "MANAGE 2.2 — Safeguards", "Encryption is a baseline technical safeguard"
+    "data_residency_commitment": RmfMappingEntry(
+        RmfFunction.GOVERN, "GOVERN 1.1 — Policies and procedures", "Jurisdictional and transfer obligations"
     ),
-    "has_soc2": RmfMappingEntry(
-        RmfFunction.MEASURE, "MEASURE 2.1 — Independent evaluation", "Third-party attestation of controls"
+    "data_stored_offshore_unclear": RmfMappingEntry(
+        RmfFunction.MAP, "MAP 3.4 — Third-party dependencies", "Unclear storage location is an unmapped dependency"
     ),
     "subprocessors_disclosed": RmfMappingEntry(
         RmfFunction.MAP, "MAP 3.4 — Third-party dependencies", "Subprocessor chain is part of the risk map"
+    ),
+    "data_encrypted": RmfMappingEntry(
+        RmfFunction.MANAGE, "MANAGE 2.2 — Safeguards", "Encryption is a baseline technical safeguard"
     ),
     "rbac_available": RmfMappingEntry(
         RmfFunction.MANAGE, "MANAGE 2.2 — Safeguards", "Access control safeguard"
@@ -35,8 +38,20 @@ _QUESTION_TO_RMF: dict[str, RmfMappingEntry] = {
     "supports_sso_mfa": RmfMappingEntry(
         RmfFunction.MANAGE, "MANAGE 2.2 — Safeguards", "Authentication safeguard"
     ),
+    "pentest_cadence": RmfMappingEntry(
+        RmfFunction.MEASURE, "MEASURE 2.7 — Security and resilience", "Independent security testing"
+    ),
     "incident_reporting_defined": RmfMappingEntry(
         RmfFunction.MANAGE, "MANAGE 4.1 — Incident response", "Post-deployment monitoring and response"
+    ),
+    "has_soc2": RmfMappingEntry(
+        RmfFunction.MEASURE, "MEASURE 2.1 — Independent evaluation", "Third-party attestation of controls"
+    ),
+    "customer_audit_rights": RmfMappingEntry(
+        RmfFunction.GOVERN, "GOVERN 6.1 — Third-party accountability", "Right to verify vendor claims"
+    ),
+    "model_change_notification": RmfMappingEntry(
+        RmfFunction.MANAGE, "MANAGE 4.2 — Change management", "Material model changes alter the risk profile"
     ),
     "sensitive_data_can_appear_in_output": RmfMappingEntry(
         RmfFunction.MEASURE, "MEASURE 2.7 — Security and resilience", "Output-level data leakage risk"
@@ -52,6 +67,12 @@ _QUESTION_TO_RMF: dict[str, RmfMappingEntry] = {
     ),
     "ai_can_access_other_systems": RmfMappingEntry(
         RmfFunction.MAP, "MAP 1.1 — Context and purpose", "Agentic scope expands the risk surface"
+    ),
+    "bias_testing": RmfMappingEntry(
+        RmfFunction.MEASURE, "MEASURE 2.11 — Fairness and bias", "Fairness evaluation evidence"
+    ),
+    "output_explainability": RmfMappingEntry(
+        RmfFunction.MEASURE, "MEASURE 2.9 — Explainability", "Interpretability of model outputs"
     ),
 }
 

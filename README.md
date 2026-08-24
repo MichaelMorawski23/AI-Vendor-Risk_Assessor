@@ -21,30 +21,40 @@ prompt-injection screen before their content ever reaches the scoring logic.
 
 ## How it works
 
-1. **Ingest** — upload vendor docs (privacy policy, security whitepaper, SOC 2,
-   DPA, questionnaire answers) as PDF/text.
-2. **Screen** — [`src/injection_guard.py`](src/injection_guard.py) scans extracted
+1. **Intake** — capture the engagement context: deployment model, business
+   criticality, data classification and data types, regulatory scope, user
+   population, integrations, AI capabilities, and whether the AI influences
+   consequential decisions about people.
+2. **Ingest** — upload vendor docs (privacy policy, security whitepaper, SOC 2,
+   DPA, questionnaire answers) as PDF.
+3. **Screen** — [`src/injection_guard.py`](src/injection_guard.py) scans extracted
    text for instruction-like content before it's included in any LLM prompt, and
-   flags/quarantines suspicious segments instead of passing them through silently.
-3. **Extract** — an LLM pulls answers to a fixed set of risk questions (training on
-   customer data, retention, encryption, SSO/MFA, subprocessors, incident response,
-   AI-specific items like prompt-injection protections and human approval gates),
-   each answer tagged with the source document and page it came from. No source,
-   no claim — the field is marked "Not verified."
-4. **Score** — [`src/risk_scoring.py`](src/risk_scoring.py) applies a transparent,
-   rule-based scoring model (not an LLM) to compute inherent and residual risk, so
-   the score is auditable and reproducible.
-5. **Map** — [`src/rmf_mapping.py`](src/rmf_mapping.py) maps findings to NIST AI RMF
-   functions (Govern / Map / Measure / Manage) and common TPRM controls.
-6. **Report** — generates an Excel/PDF risk register with citations, gaps, and a
-   recommendation. A human reviewer makes the final call — the tool never
-   auto-approves.
+   redacts suspicious spans instead of passing them through silently.
+4. **Extract** — an LLM answers a fixed set of 21 risk questions across four
+   domains (data handling, security, assurance, AI-specific risk), each answer
+   tagged with the source document and page it came from. No source, no claim —
+   the field is marked "Not verified."
+5. **Score** — [`src/risk_scoring.py`](src/risk_scoring.py) applies a transparent,
+   rule-based model (not an LLM), following standard TPRM practice:
+   - **Inherent risk** comes from the intake profile — the risk of the engagement
+     itself, before any vendor control. Shown as an itemized point breakdown.
+   - **Control gaps** come from the evidence. An unverified control counts as a
+     gap: if the documentation doesn't evidence it, the assessment can't credit it.
+   - **Residual risk** is inherent risk reduced by verified control coverage —
+     and any unmitigated high-severity gap blocks reduction entirely.
+6. **Map** — [`src/rmf_mapping.py`](src/rmf_mapping.py) maps every question to a
+   NIST AI RMF function (Govern / Map / Measure / Manage).
+7. **Report** — generates a multi-sheet Excel risk register: summary, intake,
+   inherent-risk drivers, cited evidence, findings with recommended controls,
+   required conditions, RMF mapping, and anything the injection screen redacted.
+   A human reviewer records the decision — the tool never auto-approves.
 
 ## Status
 
-Early scaffold. Core pure-Python pieces (models, injection screening, risk scoring,
-RMF mapping) are implemented and unit-tested. The LLM extraction step and Streamlit
-UI are stubbed pending an Anthropic API key.
+Working end-to-end. The pure-Python pieces (models, injection screening, risk
+scoring, RMF mapping, report generation) are implemented and unit-tested; the
+Streamlit UI and Claude-backed extraction run against real documents with an
+`ANTHROPIC_API_KEY` set.
 
 ## Stack
 
@@ -64,11 +74,13 @@ streamlit run app.py
 
 ## Roadmap
 
-- [ ] Wire `llm_extractor.py` to Claude API with citation-checking eval set
-- [ ] Streamlit UI for upload → review → approve flow
-- [ ] Excel/PDF report generation
+- [x] Rule-based inherent/residual scoring driven by an intake profile
+- [x] Streamlit UI for intake → review → export flow
+- [x] Excel risk register generation
+- [ ] Citation-checking eval set (verify the extractor never invents a source)
 - [ ] Persist assessments (SQLite)
 - [ ] Multi-reviewer approval workflow
+- [ ] PDF report output alongside Excel
 
 ## Disclaimer
 
