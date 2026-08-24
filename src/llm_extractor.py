@@ -73,7 +73,22 @@ def extract_evidence(pages: list[DocumentPage], model: str = "claude-sonnet-5") 
         system=_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": _build_user_prompt(pages)}],
     )
-    raw = response.content[0].text
+    # response.content may include non-text blocks first (e.g. ThinkingBlock,
+    # when the model reasons before answering) — find the actual text block(s)
+    # rather than assuming content[0] is text.
+    text_blocks = [block.text for block in response.content if block.type == "text"]
+    if not text_blocks:
+        raise RuntimeError(f"Model returned no text content (blocks: {[b.type for b in response.content]})")
+    raw = "".join(text_blocks).strip()
+
+    # The model may wrap the JSON in a markdown code fence despite instructions
+    # not to — strip it rather than failing the whole extraction over formatting.
+    if raw.startswith("```"):
+        lines = raw.split("\n")[1:]  # drop the opening ``` or ```json line
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        raw = "\n".join(lines).strip()
+
     parsed = json.loads(raw)
 
     # Index by question id rather than zipping positionally — the model may

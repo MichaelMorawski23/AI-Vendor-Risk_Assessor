@@ -62,6 +62,33 @@ Python, Streamlit, pdfplumber, Claude API (extraction), openpyxl/reportlab (repo
 Rule-based scoring engine — deliberately not LLM-driven, so risk scores are
 deterministic and explainable.
 
+## Testing
+
+Three layers, from cheapest to most realistic:
+
+1. **Unit tests** (no API key, no network) — the deterministic pieces:
+   injection screening, risk scoring, RMF mapping.
+   ```bash
+   pytest -q
+   ```
+2. **Extraction eval** (hits the real Anthropic API — costs a small amount) —
+   runs the actual extractor against [`sample_docs/`](sample_docs), a synthetic
+   three-document vendor packet, and checks every answer against known ground
+   truth in [`scripts/make_sample_docs.py`](scripts/make_sample_docs.py). It
+   fails hard on any fabricated answer (a "yes/no" where the documents are
+   silent) — that's the one failure mode the whole "Not verified" design
+   exists to prevent — and reports (without failing outside a threshold) any
+   answer that's simply wrong. One of the three documents has a prompt-injection
+   payload planted in it, so this also proves the injection guard actually
+   fires against real PDF content, not just the unit-test strings.
+   ```bash
+   pytest tests/test_extraction_eval.py -v -s
+   ```
+3. **Manual, in the app** — run `streamlit run app.py`, fill in the intake
+   form, and upload the files from `sample_docs/`. Regenerate them anytime with
+   `python scripts/make_sample_docs.py` (they're synthetic — SampleAI isn't a
+   real company).
+
 ## Setup
 
 ```bash
