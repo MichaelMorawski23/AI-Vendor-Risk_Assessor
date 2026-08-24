@@ -23,6 +23,7 @@ from src.models import (
     VendorAssessment,
     VendorProfile,
 )
+from src.html_report import build_html_report
 from src.questions import QUESTIONS_BY_ID
 from src.report import build_excel_bytes
 from src.risk_scoring import (
@@ -390,11 +391,23 @@ with tab_review:
     if decision == Decision.PENDING or not recommendation.strip():
         st.info("Record a decision and reviewer notes to enable export.")
     else:
-        st.download_button(
-            "Download risk register (.xlsx)",
-            data=build_excel_bytes(assessment),
-            file_name=f"{assessment.profile.vendor_name.replace(' ', '_')}_risk_register.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
-            use_container_width=True,
-        )
+        file_stub = assessment.profile.vendor_name.replace(" ", "_")
+        dl1, dl2 = st.columns(2)
+        with dl1:
+            st.download_button(
+                "Download full report (.html)",
+                data=build_html_report(assessment),
+                file_name=f"{file_stub}_risk_report.html",
+                mime="text/html",
+                type="primary",
+                use_container_width=True,
+                help="One scrollable page with a table of contents — open it in any browser.",
+            )
+        with dl2:
+            st.download_button(
+                "Download risk register (.xlsx)",
+                data=build_excel_bytes(assessment),
+                file_name=f"{file_stub}_risk_register.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )

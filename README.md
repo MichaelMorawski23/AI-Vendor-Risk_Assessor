@@ -44,9 +44,13 @@ prompt-injection screen before their content ever reaches the scoring logic.
      and any unmitigated high-severity gap blocks reduction entirely.
 6. **Map** — [`src/rmf_mapping.py`](src/rmf_mapping.py) maps every question to a
    NIST AI RMF function (Govern / Map / Measure / Manage).
-7. **Report** — generates a multi-sheet Excel risk register: summary, intake,
-   inherent-risk drivers, cited evidence, findings with recommended controls,
-   required conditions, RMF mapping, and anything the injection screen redacted.
+7. **Report** — two downloadable outputs. A **self-contained HTML report**
+   ([`src/html_report.py`](src/html_report.py)) — one scrollable page with a
+   sticky table of contents, covering the executive summary, engagement
+   profile, itemized inherent-risk drivers, every cited claim, findings with
+   recommended controls, the RMF crosswalk, and whatever the injection screen
+   redacted. And a multi-sheet **Excel risk register**
+   ([`src/report.py`](src/report.py)) for teams that work in spreadsheets.
    A human reviewer records the decision — the tool never auto-approves.
 
 ## Status
@@ -104,10 +108,11 @@ streamlit run app.py
 - [x] Rule-based inherent/residual scoring driven by an intake profile
 - [x] Streamlit UI for intake → review → export flow
 - [x] Excel risk register generation
-- [ ] Citation-checking eval set (verify the extractor never invents a source)
+- [x] Citation-checking eval set (verify the extractor never invents a source)
+- [x] Self-contained HTML report with table of contents
 - [ ] Persist assessments (SQLite)
 - [ ] Multi-reviewer approval workflow
-- [ ] PDF report output alongside Excel
+- [ ] PDF report output alongside HTML/Excel
 
 ## Disclaimer
 
