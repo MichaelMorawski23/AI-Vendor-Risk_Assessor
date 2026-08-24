@@ -13,6 +13,8 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
+from src.analysis import analyze
+from src.charts import domain_stacked_chart, donut_chart, severity_bar_chart
 from src.extraction import extract_pdf_pages
 from src.injection_guard import sanitize_for_prompt, scan_text
 from src.llm_extractor import extract_evidence
@@ -86,6 +88,18 @@ st.markdown(
       }
       .risk-card .value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
       .stat { font-size: .8rem; opacity: .7; }
+      .flow { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin: 1.3rem 0 .3rem; }
+      .flow-step {
+        display: flex; align-items: center; gap: .5rem; background: rgba(128,128,128,.08);
+        border: 1px solid rgba(128,128,128,.22); border-radius: 999px; padding: .4rem .9rem .4rem .6rem;
+      }
+      .flow-step .num {
+        width: 1.3rem; height: 1.3rem; border-radius: 999px; background: #4f46e5; color: #fff;
+        font-size: .68rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .flow-step .txt { font-size: .8rem; font-weight: 600; opacity: .9; }
+      .flow-arrow { opacity: .35; font-size: .85rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -104,6 +118,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+_FLOW_STEPS = ["Upload", "Screen", "Extract", "Score", "Report"]
+st.markdown(
+    '<div class="flow">'
+    + '<span class="flow-arrow">→</span>'.join(
+        f'<div class="flow-step"><div class="num">{i}</div><div class="txt">{step}</div></div>'
+        for i, step in enumerate(_FLOW_STEPS, start=1)
+    )
+    + "</div>",
+    unsafe_allow_html=True,
+)
+
 if "assessment" not in st.session_state:
     st.session_state.assessment = None
 if "run_count" not in st.session_state:
@@ -112,6 +137,17 @@ if "is_demo" not in st.session_state:
     st.session_state.is_demo = False
 
 DEMO_FIXTURE = Path(__file__).parent / "src" / "demo_assessment.json"
+
+
+def svg_block(svg: str) -> str:
+    """Wrap a chart so it inherits Streamlit's theme text color.
+
+    The charts draw their labels with fill="currentColor"; without an explicit
+    color on a wrapper the SVG would fall back to black and vanish in dark mode.
+    """
+    if not svg:
+        return ""
+    return f'<div style="color:var(--text-color);line-height:0;">{svg}</div>'
 
 
 def risk_card(label: str, level: RiskLevel | None) -> None:
@@ -341,6 +377,52 @@ with tab_summary:
     m1.metric("Verified control coverage", f"{assessment.control_coverage:.0%}")
     m2.metric("Evidence verified", f"{verified_count}/{len(assessment.evidence)}")
     m3.metric("Open findings", len(assessment.findings))
+
+    analysis = analyze(assessment)
+
+    st.markdown("##### Evidence coverage & findings")
+    ch1, ch2 = st.columns(2)
+    with ch1:
+        st.markdown(
+            svg_block(
+                donut_chart(
+                    [
+                        ("Evidenced with citation", analysis.verified_count, "#16a34a"),
+                        ("Not verified", analysis.unverified_count, "#d97706"),
+                    ],
+                    center_value=f"{analysis.verified_count / len(assessment.evidence):.0%}"
+                    if assessment.evidence
+                    else "—",
+                    center_label="evidenced",
+                )
+            ),
+            unsafe_allow_html=True,
+        )
+    with ch2:
+        st.markdown(
+            svg_block(severity_bar_chart(analysis.severity_counts, RISK_COLORS)),
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("##### Risk by domain")
+    st.markdown(
+        svg_block(domain_stacked_chart(analysis.domains, RISK_COLORS)), unsafe_allow_html=True
+    )
+    st.dataframe(
+        [
+            {
+                "Domain": d.domain,
+                "Posture": d.posture.value,
+                "Evidenced": f"{d.verified}/{d.total}",
+                "Coverage": f"{d.verification_rate:.0%}",
+                "Gaps": d.gaps,
+                "High-severity gaps": d.high_severity_gaps,
+            }
+            for d in analysis.domains
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
 
     with st.expander("What drove inherent risk"):
         st.dataframe(

@@ -177,7 +177,7 @@
         "page": "1"
       },
       "verified": true,
-      "quote": "Yes. Customers receive at least 30 days notice before any material change to the underlying models used for summarization, including a change of model provider."
+      "quote": "Customers receive at least 30 days notice before any material change to the underlying models used for summarization, including a change of model provider."
     },
     {
       "question_id": "sensitive_data_can_appear_in_output",

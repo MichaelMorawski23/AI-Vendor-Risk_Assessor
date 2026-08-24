@@ -78,6 +78,22 @@ class AssessmentAnalysis:
     rmf_coverage: list[RmfFunctionCoverage] = field(default_factory=list)
     register: list[RiskRegisterRow] = field(default_factory=list)
     risk_reduced: bool = False
+    severity_counts: list[tuple[RiskLevel, int]] = field(default_factory=list)
+    verified_count: int = 0
+    unverified_count: int = 0
+
+
+def severity_counts(assessment: VendorAssessment) -> list[tuple[RiskLevel, int]]:
+    """Findings per severity, highest first, including levels with zero findings.
+
+    Zero-count levels are kept so the chart's x-axis stays consistent between
+    assessments — a vendor with no critical findings should show an empty
+    Critical column, not silently omit it.
+    """
+    tally = {level: 0 for level in ORDERED_RISK_LEVELS}
+    for finding in assessment.findings:
+        tally[finding.severity] += 1
+    return [(level, tally[level]) for level in reversed(ORDERED_RISK_LEVELS)]
 
 
 def _domain_for(question_id: str) -> str:
@@ -256,10 +272,14 @@ def analyze(assessment: VendorAssessment) -> AssessmentAnalysis:
         and residual is not None
         and ORDERED_RISK_LEVELS.index(residual) < ORDERED_RISK_LEVELS.index(inherent)
     )
+    verified = sum(1 for e in assessment.evidence if e.verified)
     return AssessmentAnalysis(
         narrative=executive_narrative(assessment),
         domains=domain_breakdowns(assessment),
         rmf_coverage=rmf_coverage(assessment),
         register=risk_register(assessment),
         risk_reduced=reduced,
+        severity_counts=severity_counts(assessment),
+        verified_count=verified,
+        unverified_count=len(assessment.evidence) - verified,
     )

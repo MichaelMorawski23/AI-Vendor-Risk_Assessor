@@ -30,20 +30,36 @@ residual risk, and any unmitigated high-severity gap blocks the reduction entire
 
 ## What it produces
 
-A single-page HTML report — executive summary, risk-by-domain breakdown, a numbered risk
-register, itemized inherent-risk drivers, cited evidence, NIST AI RMF coverage, and a
-methodology appendix — plus a multi-sheet Excel register.
+A single-page HTML report — executive summary with a coverage donut and a findings-by-
+severity chart, risk-by-domain breakdown, a numbered risk register, itemized inherent-risk
+drivers, cited evidence, NIST AI RMF coverage, and a methodology appendix — plus a
+multi-sheet Excel register. The same charts appear live in the app's results view.
 
-## Run it
+## Try it
+
+This is currently a **view-only public artifact** — the link above is a real report the
+tool produced, but there's no hosted live app to click into yet. To actually run it
+(upload your own vendor documents, get your own assessment), clone the repo and run it
+locally:
+
+**You'll need:**
+- Python 3.11 or newer
+- `pip` and (recommended) `venv`
+- An [Anthropic API key](https://console.anthropic.com/settings/keys) — only for real
+  runs. Demo mode needs none.
 
 ```bash
+git clone https://github.com/MichaelMorawski23/AI-Vendor-Risk_Assessor.git
+cd AI-Vendor-Risk_Assessor
 python -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Click **Load demo assessment** to explore with no API key. For a real run, `cp .env.example
-.env`, add an `ANTHROPIC_API_KEY`, and upload the PDFs in [`sample_docs/`](sample_docs).
+Opens at `http://localhost:8501`. Click **Load demo assessment** to explore immediately
+with no API key. For a real run, `cp .env.example .env`, add your `ANTHROPIC_API_KEY` to
+that file, and upload the PDFs in [`sample_docs/`](sample_docs) — or your own vendor
+documentation.
 
 ## Testing
 
@@ -58,8 +74,9 @@ unit-test strings.
 
 ## Stack
 
-Python · Streamlit · pdfplumber · Claude API (extraction only) · openpyxl. Report charts
-are hand-rolled inline SVG so the exported file stays self-contained.
+Python · Streamlit · pdfplumber · Claude API (extraction only) · openpyxl. All charts —
+in the app and in the exported report — are hand-rolled inline SVG, no charting library,
+so the exported report stays a single self-contained file.
 
 ## Disclaimer
 

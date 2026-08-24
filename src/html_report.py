@@ -20,7 +20,13 @@ import html
 from datetime import datetime, timezone
 
 from .analysis import AssessmentAnalysis, analyze
-from .charts import domain_chart, risk_scale_chart, rmf_chart
+from .charts import (
+    domain_stacked_chart,
+    donut_chart,
+    risk_scale_chart,
+    rmf_chart,
+    severity_bar_chart,
+)
 from .models import RiskLevel, VendorAssessment
 from .questions import QUESTIONS_BY_ID, RISK_QUESTIONS
 from .risk_scoring import MAX_INHERENT_THRESHOLDS_DOC
@@ -65,6 +71,17 @@ def _summary_section(assessment: VendorAssessment, analysis: AssessmentAnalysis)
     verified_count = sum(1 for e in assessment.evidence if e.verified)
     unverified = assessment.unverified_questions()
 
+    evidence_donut = donut_chart(
+        [
+            ("Evidenced with citation", analysis.verified_count, "#16a34a"),
+            ("Not verified", analysis.unverified_count, "#d97706"),
+        ],
+        center_value=f"{analysis.verified_count / len(assessment.evidence):.0%}"
+        if assessment.evidence
+        else "—",
+        center_label="evidenced",
+    )
+
     body = f"""
     <p class="narrative">{_esc(analysis.narrative)}</p>
     <div class="cards">
@@ -78,6 +95,16 @@ def _summary_section(assessment: VendorAssessment, analysis: AssessmentAnalysis)
       <div class="chart-title">Inherent vs. residual risk</div>
       {risk_scale_chart(assessment.inherent_risk, assessment.residual_risk, _RISK_COLORS)}
       <p class="rationale">{_esc(assessment.residual_rationale)}</p>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-block">
+        <div class="chart-title">Evidence coverage</div>
+        {evidence_donut}
+      </div>
+      <div class="chart-block">
+        <div class="chart-title">Findings by severity</div>
+        {severity_bar_chart(analysis.severity_counts, _RISK_COLORS)}
+      </div>
     </div>
     <p><strong>Business use case:</strong> {_esc(assessment.profile.business_use_case) or '<span class="muted">Not provided</span>'}</p>
     """
@@ -94,7 +121,7 @@ def _domain_section(analysis: AssessmentAnalysis) -> str:
     body = f"""
     <p class="muted">Where risk concentrates. Domain posture is High when any high-severity gap
     exists or at least half the domain's controls are flagged.</p>
-    <div class="chart-block">{domain_chart(analysis.domains, _RISK_COLORS)}</div>
+    <div class="chart-block">{domain_stacked_chart(analysis.domains, _RISK_COLORS)}</div>
     """
     rows = [
         [
@@ -346,6 +373,8 @@ def build_html_report(assessment: VendorAssessment) -> str:
   .card-label {{ font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .3rem; }}
   .card-value {{ font-size: 1.15rem; font-weight: 700; }}
   .chart-block {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1rem; }}
+  .chart-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }}
+  .chart-grid .chart-block {{ margin-bottom: 0; }}
   .chart-title {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .7rem; }}
   .chip {{ display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-weight: 700; font-size: .82rem; border: 1px solid transparent; }}
   .chip-muted {{ background: #eee; color: var(--muted); }}
