@@ -19,9 +19,12 @@ def test_report_contains_every_section_anchor():
     a = _assessment()
     a.injection_flags = [InjectionFlag("doc.pdf", 1, "snippet", "matched", "reason")]
     html = build_html_report(a)
-    for anchor in ["summary", "profile", "inherent", "evidence", "findings", "rmf", "screened", "review"]:
-        assert f'id="{anchor}"' in html
-        assert f'href="#{anchor}"' in html
+    for anchor in [
+        "summary", "domains", "register", "profile", "inherent",
+        "evidence", "rmf", "screened", "review", "methodology",
+    ]:
+        assert f'id="{anchor}"' in html, f"missing section {anchor}"
+        assert f'href="#{anchor}"' in html, f"missing TOC link for {anchor}"
 
 
 def test_screened_section_omitted_when_nothing_was_flagged():

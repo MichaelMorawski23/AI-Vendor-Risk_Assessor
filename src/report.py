@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.worksheet import Worksheet
 
+from .analysis import analyze
 from .models import VendorAssessment
 from .questions import QUESTIONS_BY_ID
 
@@ -42,6 +43,8 @@ def _build_workbook(assessment: VendorAssessment) -> Workbook:
         ("Business owner", profile.business_owner),
         ("Engagement stage", profile.engagement_stage),
         ("Business use case", profile.business_use_case),
+        ("", ""),
+        ("Summary", analyze(assessment).narrative),
         ("", ""),
         ("Inherent risk", assessment.inherent_risk.value if assessment.inherent_risk else "Not scored"),
         ("Residual risk", assessment.residual_risk.value if assessment.residual_risk else "Not scored"),
@@ -108,12 +111,43 @@ def _build_workbook(assessment: VendorAssessment) -> Workbook:
         )
     _autosize(evidence_sheet, max_width=70)
 
-    # --- Findings ---
-    findings_sheet = wb.create_sheet("Findings")
-    _write_header(findings_sheet, ["Severity", "Finding", "Recommended control"])
-    for f in assessment.findings:
-        findings_sheet.append([f.severity.value, f.summary, f.recommended_control or ""])
-    _autosize(findings_sheet, max_width=70)
+    # --- Risk register (numbered, GRC-style) ---
+    analysis = analyze(assessment)
+    register_sheet = wb.create_sheet("Risk Register")
+    _write_header(
+        register_sheet,
+        ["ID", "Domain", "Finding", "Severity", "Evidence", "NIST AI RMF", "Recommended control", "Status"],
+    )
+    for r in analysis.register:
+        register_sheet.append(
+            [
+                r.risk_id, r.domain, r.finding, r.severity.value,
+                r.evidence_status, r.rmf_reference, r.recommended_control, r.status,
+            ]
+        )
+    _autosize(register_sheet, max_width=60)
+
+    # --- Domain breakdown ---
+    domain_sheet = wb.create_sheet("Risk by Domain")
+    _write_header(
+        domain_sheet,
+        ["Domain", "Posture", "Evidenced", "Total", "Coverage", "Gaps", "High-severity gaps"],
+    )
+    for d in analysis.domains:
+        domain_sheet.append(
+            [d.domain, d.posture.value, d.verified, d.total,
+             f"{d.verification_rate:.0%}", d.gaps, d.high_severity_gaps]
+        )
+    _autosize(domain_sheet)
+
+    # --- RMF coverage ---
+    coverage_sheet = wb.create_sheet("RMF Coverage")
+    _write_header(coverage_sheet, ["Function", "Questions mapped", "Evidenced", "Coverage", "Gaps"])
+    for c in analysis.rmf_coverage:
+        coverage_sheet.append(
+            [c.function.value, c.total, c.verified, f"{c.verification_rate:.0%}", c.gaps]
+        )
+    _autosize(coverage_sheet)
 
     # --- Required controls ---
     controls_sheet = wb.create_sheet("Required Controls")

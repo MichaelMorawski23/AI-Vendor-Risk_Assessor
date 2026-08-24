@@ -95,6 +95,16 @@ _INHERENT_THRESHOLDS: list[tuple[int, RiskLevel]] = [
     (20, RiskLevel.HIGH),
 ]
 
+# Human-readable form of the thresholds above, for the report's methodology
+# section. Derived from the same list so the two can't drift apart.
+MAX_INHERENT_THRESHOLDS_DOC: str = (
+    ", ".join(
+        f"{'0' if i == 0 else _INHERENT_THRESHOLDS[i - 1][0] + 1}–{ceiling} {level.value}"
+        for i, (ceiling, level) in enumerate(_INHERENT_THRESHOLDS)
+    )
+    + f", {_INHERENT_THRESHOLDS[-1][0] + 1}+ {RiskLevel.CRITICAL.value}"
+)
+
 
 def _level_for_inherent(score: int) -> RiskLevel:
     for ceiling, level in _INHERENT_THRESHOLDS:
