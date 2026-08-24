@@ -1,8 +1,13 @@
-"""Generates the showcase sample report from the synthetic vendor packet.
+"""Generates the showcase sample report and the app's demo fixture.
 
 This runs the *real* pipeline — PDF extraction, injection screening, live LLM
 extraction, scoring, analysis — against sample_docs/*.pdf. The published sample
 report is therefore genuine tool output, not a hand-authored mockup.
+
+Outputs:
+  docs/index.html                  the published report (GitHub Pages root)
+  docs/sample_risk_register.xlsx   the matching Excel register
+  src/demo_assessment.json         fixture the app loads for its demo mode
 
 Requires ANTHROPIC_API_KEY. Run: python scripts/make_sample_report.py
 """
@@ -33,10 +38,13 @@ from src.models import (  # noqa: E402
 from src.report import write_excel_report  # noqa: E402
 from src.risk_scoring import assess  # noqa: E402
 from src.rmf_mapping import map_all  # noqa: E402
+from src.serialization import dumps, loads  # noqa: E402
 
 SAMPLE_DOCS = ROOT / "sample_docs"
-OUT_HTML = SAMPLE_DOCS / "sample_report.html"
-OUT_XLSX = SAMPLE_DOCS / "sample_risk_register.xlsx"
+DOCS = ROOT / "docs"
+OUT_HTML = DOCS / "index.html"
+OUT_XLSX = DOCS / "sample_risk_register.xlsx"
+OUT_FIXTURE = ROOT / "src" / "demo_assessment.json"
 
 # The intake a reviewer would realistically fill in for this vendor.
 PROFILE = VendorProfile(
@@ -110,10 +118,20 @@ def main() -> None:
     print(f"  inherent={assessment.inherent_risk.value} residual={assessment.residual_risk.value}")
     print(f"  {len(analysis.register)} risk register entries")
 
+    DOCS.mkdir(exist_ok=True)
     OUT_HTML.write_text(build_html_report(assessment), encoding="utf-8")
     write_excel_report(assessment, OUT_XLSX)
+    OUT_FIXTURE.write_text(dumps(assessment), encoding="utf-8")
+
+    # A fixture that can't be read back would break demo mode at runtime, so
+    # verify the round-trip here rather than discovering it in the deployed app.
+    reloaded = loads(OUT_FIXTURE.read_text(encoding="utf-8"))
+    assert reloaded.inherent_risk == assessment.inherent_risk
+    assert len(reloaded.evidence) == len(assessment.evidence)
+
     print(f"\nwrote {OUT_HTML.relative_to(ROOT)}")
     print(f"wrote {OUT_XLSX.relative_to(ROOT)}")
+    print(f"wrote {OUT_FIXTURE.relative_to(ROOT)} (round-trip verified)")
 
 
 if __name__ == "__main__":
