@@ -6,6 +6,7 @@ Run with: streamlit run app.py
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -26,6 +27,7 @@ from src.models import (
 from src.html_report import build_html_report
 from src.questions import QUESTIONS_BY_ID
 from src.report import build_excel_bytes
+from src.run_limit import run_button_state
 from src.risk_scoring import (
     AI_CAPABILITY_OPTIONS,
     DATA_TYPE_OPTIONS,
@@ -93,6 +95,8 @@ st.write("")
 
 if "assessment" not in st.session_state:
     st.session_state.assessment = None
+if "run_count" not in st.session_state:
+    st.session_state.run_count = 0
 
 
 def risk_card(label: str, level: RiskLevel | None) -> None:
@@ -176,11 +180,22 @@ with st.form("intake"):
         )
 
     st.write("")
-    submitted = st.form_submit_button("Run assessment", type="primary", use_container_width=True)
+    button = run_button_state(st.session_state.run_count)
+    submitted = st.form_submit_button(
+        button.label,
+        type="primary",
+        use_container_width=True,
+        disabled=button.disabled,
+    )
+    if button.disabled:
+        st.caption("Refresh the page to start a new session.")
 
 if submitted:
     if not vendor_name or not uploaded_files:
         st.error("Vendor name and at least one document are required.")
+        st.stop()
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        st.error("ANTHROPIC_API_KEY is not set — see .env.example.")
         st.stop()
 
     profile = VendorProfile(
@@ -226,6 +241,10 @@ if submitted:
         page.text = sanitize_for_prompt(page.text, flags)
 
     progress.progress(0.6, text="Extracting evidence with citations...")
+    # Counted here rather than at submit: everything above this line is local
+    # work, so a run that fails on unreadable PDFs shouldn't consume a rerun.
+    # From this point the API call is billed whether or not it succeeds.
+    st.session_state.run_count += 1
     try:
         assessment.evidence = extract_evidence(all_pages).evidence
     except RuntimeError as e:
