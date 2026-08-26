@@ -5,7 +5,8 @@ extraction, scoring, analysis — against sample_docs/*.pdf. The published sampl
 report is therefore genuine tool output, not a hand-authored mockup.
 
 Outputs:
-  docs/index.html                  the published report (GitHub Pages root)
+  docs/report.html                 the published report (linked from docs/index.html,
+                                    the GitHub Pages landing page — NOT overwritten by this script)
   docs/sample_risk_register.xlsx   the matching Excel register
   src/demo_assessment.json         fixture the app loads for its demo mode
 
@@ -42,7 +43,9 @@ from src.serialization import dumps, loads  # noqa: E402
 
 SAMPLE_DOCS = ROOT / "sample_docs"
 DOCS = ROOT / "docs"
-OUT_HTML = DOCS / "index.html"
+# docs/index.html is the hand-authored GitHub Pages landing page, not generated
+# output — writing here would silently overwrite it on the next regeneration.
+OUT_HTML = DOCS / "report.html"
 OUT_XLSX = DOCS / "sample_risk_register.xlsx"
 OUT_FIXTURE = ROOT / "src" / "demo_assessment.json"
 
@@ -77,6 +80,20 @@ REVIEWER_NOTES = (
     "disable model training on customer data and provide a current SOC 2 Type II report before use "
     "is expanded to client meetings. Re-assess at renewal or on any material model change."
 )
+
+
+def _with_back_link(html: str) -> str:
+    """Adds a "back to overview" banner, for the copy published on the docs/
+    landing page only. build_html_report() itself stays landing-page-agnostic
+    since the same function produces the report a user downloads straight out
+    of the live app, where there's no landing page to link back to.
+    """
+    banner = (
+        '<a href="index.html" style="display:block;text-align:center;padding:.6rem;'
+        'background:#4f46e5;color:#fff;text-decoration:none;font-size:.85rem;'
+        'font-weight:600;">&larr; Back to overview</a>'
+    )
+    return html.replace("<body>", f"<body>\n{banner}", 1)
 
 
 def main() -> None:
@@ -119,7 +136,7 @@ def main() -> None:
     print(f"  {len(analysis.register)} risk register entries")
 
     DOCS.mkdir(exist_ok=True)
-    OUT_HTML.write_text(build_html_report(assessment), encoding="utf-8")
+    OUT_HTML.write_text(_with_back_link(build_html_report(assessment)), encoding="utf-8")
     write_excel_report(assessment, OUT_XLSX)
     OUT_FIXTURE.write_text(dumps(assessment), encoding="utf-8")
 

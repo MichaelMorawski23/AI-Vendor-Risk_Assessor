@@ -51,7 +51,7 @@
         "page": "1"
       },
       "verified": true,
-      "quote": "Meeting transcripts and derived summaries are retained for the life of the account and are not subject to a fixed deletion schedule. We retain this content indefinitely to support product improvement and historical search functionality."
+      "quote": "Meeting transcripts and derived summaries are retained for the life of the account and are not subject to a fixed deletion schedule."
     },
     {
       "question_id": "customer_can_delete_data",
@@ -207,7 +207,7 @@
         "page": "1"
       },
       "verified": true,
-      "quote": "No. Once an integration is authorized, the assistant posts summaries and creates tasks automatically without per-action confirmation."
+      "quote": "Once an integration is authorized, the assistant posts summaries and creates tasks automatically without per-action confirmation."
     },
     {
       "question_id": "prompt_injection_protections",
