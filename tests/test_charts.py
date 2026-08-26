@@ -80,3 +80,27 @@ def test_risk_scale_chart_marks_both_levels():
 
 def test_risk_scale_chart_is_empty_when_unscored():
     assert risk_scale_chart(None, None, COLORS) == ""
+
+
+def test_every_chart_carries_a_screen_reader_label():
+    """role="img" alone announces only "image" — each chart needs a description."""
+    domains = [DomainBreakdown("Security", total=4, verified=3, gaps=1, high_severity_gaps=0)]
+    charts = [
+        donut_chart([("Evidenced", 3, "#111"), ("Not verified", 1, "#222")], "75%", "evidenced"),
+        severity_bar_chart([(RiskLevel.HIGH, 1), (RiskLevel.MEDIUM, 2)], COLORS),
+        domain_stacked_chart(domains, COLORS),
+        risk_scale_chart(RiskLevel.HIGH, RiskLevel.MEDIUM, COLORS),
+    ]
+    for svg in charts:
+        assert 'aria-label="' in svg
+        label = re.search(r'aria-label="([^"]+)"', svg).group(1)
+        assert len(label) > 15, f"label too vague to be useful: {label!r}"
+
+
+def test_chart_labels_escape_quotes_so_the_attribute_cannot_break():
+    svg = donut_chart([('He said "yes"', 2, "#111"), ("Other", 1, "#222")], "66%", "evidenced")
+    assert 'aria-label="' in svg
+    assert "&quot;" in svg
+    # The raw quote must not survive inside the attribute value.
+    label = re.search(r'aria-label="([^"]*)"', svg).group(1)
+    assert '"' not in label

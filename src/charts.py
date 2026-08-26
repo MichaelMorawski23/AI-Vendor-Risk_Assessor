@@ -12,6 +12,7 @@ the charts follow the report's light/dark theme.
 
 from __future__ import annotations
 
+import html
 import math
 
 from .analysis import DomainBreakdown, RmfFunctionCoverage
@@ -34,10 +35,15 @@ def _bar_row(
     """
 
 
-def _svg(width: int, height: int, body: str) -> str:
+def _svg(width: int, height: int, body: str, label: str = "") -> str:
+    """Wraps chart body in an <svg>. `label` is the screen-reader description —
+    without it a chart announces only as "image", which tells a non-sighted
+    reader nothing about a figure the sighted version conveys at a glance.
+    """
+    aria = f' aria-label="{html.escape(label, quote=True)}"' if label else ""
     return (
         f'<svg viewBox="0 0 {width} {height}" width="100%" height="auto" '
-        f'role="img" xmlns="http://www.w3.org/2000/svg" style="max-width:{width}px;">'
+        f'role="img"{aria} xmlns="http://www.w3.org/2000/svg" style="max-width:{width}px;">'
         f"{body}</svg>"
     )
 
@@ -106,7 +112,8 @@ def donut_chart(
         )
         ly += 38
 
-    return _svg(400, max(168, ly), body)
+    summary = ", ".join(f"{label} {count} ({count / total:.0%})" for label, count, _ in segments)
+    return _svg(400, max(168, ly), body, f"{center_label.capitalize()}: {summary}.")
 
 
 def severity_bar_chart(counts: list[tuple[RiskLevel, int]], colors: dict[RiskLevel, str]) -> str:
@@ -131,7 +138,10 @@ def severity_bar_chart(counts: list[tuple[RiskLevel, int]], colors: dict[RiskLev
             f'<text x="{x + col_w / 2}" y="{base_y + 16}" font-size="10" text-anchor="middle" '
             f'fill="currentColor" opacity="0.65">{level.value}</text>'
         )
-    return _svg(len(counts) * (col_w + gap), base_y + 24, body)
+    summary = ", ".join(f"{level.value} {count}" for level, count in counts)
+    return _svg(
+        len(counts) * (col_w + gap), base_y + 24, body, f"Findings by severity: {summary}."
+    )
 
 
 def domain_stacked_chart(domains: list[DomainBreakdown], colors: dict[RiskLevel, str]) -> str:
@@ -156,7 +166,11 @@ def domain_stacked_chart(domains: list[DomainBreakdown], colors: dict[RiskLevel,
             f'<text x="{bar_x + bar_w + 10}" y="{y + 15}" font-size="10" fill="currentColor" '
             f'opacity="0.65">{d.verified}/{d.total} evidenced · {d.gaps} gap(s)</text>'
         )
-    return _svg(560, len(domains) * row_h, body)
+    summary = ", ".join(
+        f"{d.domain} {d.verified} of {d.total} evidenced, {d.gaps} gaps, posture {d.posture.value}"
+        for d in domains
+    )
+    return _svg(560, len(domains) * row_h, body, f"Evidence coverage by domain: {summary}.")
 
 
 def risk_scale_chart(
@@ -196,23 +210,10 @@ def risk_scale_chart(
             f'fill="currentColor" opacity="0.45">{step.value}</text>'
         )
 
-    return _svg(520, 104, body)
-
-
-def domain_chart(domains: list[DomainBreakdown], colors: dict[RiskLevel, str]) -> str:
-    """Per-domain evidence verification, colored by that domain's posture."""
-    if not domains:
-        return ""
-    body = ""
-    for i, d in enumerate(domains):
-        body += _bar_row(
-            label=d.domain,
-            value_text=f"{d.verified}/{d.total} verified · {d.gaps} gap(s)",
-            ratio=d.verification_rate,
-            color=colors[d.posture],
-            y=i * 26,
-        )
-    return _svg(560, len(domains) * 26, body)
+    return _svg(
+        520, 104, body,
+        f"Risk scale: inherent risk {inherent.value}, residual risk {residual.value}.",
+    )
 
 
 def rmf_chart(coverage: list[RmfFunctionCoverage], accent: str) -> str:
@@ -229,4 +230,7 @@ def rmf_chart(coverage: list[RmfFunctionCoverage], accent: str) -> str:
             y=i * 26,
             label_w=90,
         )
-    return _svg(560, len(coverage) * 26, body)
+    summary = ", ".join(f"{c.function.value} {c.verified} of {c.total}" for c in coverage)
+    return _svg(
+        560, len(coverage) * 26, body, f"NIST AI RMF evidence coverage by function: {summary}."
+    )

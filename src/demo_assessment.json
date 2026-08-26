@@ -207,7 +207,7 @@
         "page": "1"
       },
       "verified": true,
-      "quote": "Once an integration is authorized, the assistant posts summaries and creates tasks automatically without per-action confirmation."
+      "quote": "No. Once an integration is authorized, the assistant posts summaries and creates tasks automatically without per-action confirmation."
     },
     {
       "question_id": "prompt_injection_protections",

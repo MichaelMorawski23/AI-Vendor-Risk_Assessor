@@ -37,10 +37,9 @@ multi-sheet Excel register. The same charts appear live in the app's results vie
 
 ## Try it
 
-This is currently a **view-only public artifact** — the link above is a real report the
-tool produced, but there's no hosted live app to click into yet. To actually run it
-(upload your own vendor documents, get your own assessment), clone the repo and run it
-locally:
+The link above is a **view-only demo** — an overview page and a real report the tool
+produced. There's no hosted live app, since every real run costs an API call. To actually
+run it against your own vendor documents, clone the repo and run it locally:
 
 **You'll need:**
 - Python 3.11 or newer

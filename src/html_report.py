@@ -335,6 +335,7 @@ def build_html_report(assessment: VendorAssessment) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{_esc(p.vendor_name)} — AI Vendor Risk Assessment</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🛡️</text></svg>">
 <style>
   :root {{
     --bg: #f7f7f8; --surface: #ffffff; --border: #e3e3e6; --text: #1a1a1e;
